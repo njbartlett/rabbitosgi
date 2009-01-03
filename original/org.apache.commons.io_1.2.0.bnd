@@ -1,0 +1,8 @@
+-classpath: commons-io-1.2.jar
+version: 1.2.0
+
+Bundle-SymbolicName: org.apache.commons.io
+Bundle-Vendor: Apache Group
+Bundle-Version: ${version}
+Export-Package: *;version=${version}
+Bundle-RequiredExecutionEnvironment: J2SE-1.4

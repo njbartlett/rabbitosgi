@@ -1,0 +1,2 @@
+Bundle-Activator: com.rabbitmq.client.osgi.channel.ChannelActivator
+Private-Package: com.rabbitmq.client.osgi.channel

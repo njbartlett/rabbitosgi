@@ -1,0 +1,2 @@
+Private-Package: com.rabbitmq.client.osgi.consumer
+Bundle-Activator: com.rabbitmq.client.osgi.consumer.ConsumerActivator
