@@ -1,0 +1,37 @@
+<project name="RabbitOSGi" default="bundles">
+	
+	<path id="libs">
+		<pathelement location="runtime/equinox.jar"/>
+		<pathelement location="runtime/org.apache.commons.io_1.2.0.jar"/>
+		<pathelement location="runtime/com.rabbitmq.client_1.5.0.beta.jar"/>
+		<pathelement location="runtime/osgi.cmpn.jar"/>
+	</path>
+
+	<!-- ================================= 
+          target: compile              
+         ================================= -->
+	<target name="compile" depends="" description="Compile Sources">
+		<mkdir dir="classes"/>
+		<javac srcdir="src" destdir="classes" debug="on" classpathref="libs"/>
+	</target>
+	
+	<!-- ================================= 
+          target: bundles              
+         ================================= -->
+    <target name="bundles" depends="compile" description="Build OSGi Bundles">
+        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpath="bnd-0.0.255.jar"/>
+    	<pathconvert property="bndfiles" pathsep="," dirsep="/">
+    		<fileset dir="load" includes="*.bnd"/>
+    	</pathconvert>
+    	<bnd classpath="classes" failok="false" files="${bndfiles}" output="load"/>
+    </target>
+	
+	<!-- ================================= 
+          target: clean              
+         ================================= -->
+    <target name="clean" depends="" description="Clean Outputs">
+        <delete dir="load" includes="*.jar"/>
+    	<delete dir="classes"/>
+    </target>
+
+</project>

@@ -8,7 +8,7 @@ public class ConsumerActivator implements BundleActivator {
 	private ChannelConsumerTracker tracker;
 
 	public void start(BundleContext context) throws Exception {
-		tracker = new ChannelConsumerTracker(context, "fooq");
+		tracker = new ChannelConsumerTracker(context, "FooQueue");
 		tracker.open();
 	}
 

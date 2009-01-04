@@ -24,6 +24,7 @@ public class ChannelConsumerTracker extends ServiceTracker {
 		
 		ConsoleOutputConsumer consumer = new ConsoleOutputConsumer(channel);
 		try {
+			channel.queueDeclare(queueName);
 			consumerTag = channel.basicConsume(queueName, false, consumer);
 		} catch (IOException e) {
 			System.err.println("Error subscribing consumer");

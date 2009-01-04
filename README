@@ -1,0 +1,79 @@
+RabbitOSGi - Utilities for RabbitMQ in OSGi
+===========================================
+
+This project has been created to explore ways of using the RabbitMQ messaging broker from OSGi, in particular how we can integrate with the Service Registry to get ESB-like functionality.
+
+Running Equinox
+---------------
+
+To launch Equinox, type the following command:
+
+    java -jar runtime/equinox.jar -console
+
+We are using the FileInstall bundle from Peter Kriens (http://www.aqute.biz/Code/FileInstall). Any valid bundles copied into the `load` directory will be automatically installed and started. It should not be necessary to restart Equinox during development and testing.
+
+
+Building Bundles
+----------------
+
+To build all bundles, simply run ant. Bundles are generated in the `load` directory so that they are automatically installed in the running Equinox instance.
+
+To build an individual bundle, the Bnd tool (also by Peter Kriens, http://www.aqute.biz/Code/Bnd) can be used as follows:
+
+    bnd build -eclipse .. commands.bnd
+
+This style of the command uses the presence of an Eclipse project in the parent directory in order to calculate a classpath. You can also use an explicit classpath as follows:
+
+    bnd build -classpath ../classes commands.bnd
+
+Note that "bnd" is assumed to be an alias for `java -jar bnd.jar`.
+
+If you are developing in Eclipse and have Bnd installed as an Eclipse plug-in, individual bundles can be built simply by right-clicking on the .bnd file and selecting Make Bundle. See the Bnd documentation for instructions on installing as an Eclipse plug-in.
+
+Channel Bundle
+--------------
+
+The `channel` bundle creates a connection to a RabbitMQ broker running on localhost, using the default virtual host name "/" and username/password "guest/guest". It publishes this channel as a service in the OSGi Service Registry with the property `channel.name` set to "localhost".
+
+Consumer Bundle
+---------------
+
+This bundle watches for channel instances published in the Service Registry and creates a simple consumer for each one. The consumer receives messages from the "FooQueue" queue and simply prints them to the console.
+
+Commands Bundle
+---------------
+
+This bundle provides commands into the OSGi console. Note that it runs only under Equinox, since extending the console uses a framework-specific API (the other bundles will work under any OSGi R4 framework).
+
+The commands provided are as follows:
+
+	* listChannels: List connected channels.
+	* declExchange: Declare an exchange on the specified channel.
+	* declQ: Declare a queue.
+	* bindQ: Bind a queue to an exchange.
+	* publish: Publish a message to an exchange.
+	* receive: Retrieve a single message from a queue and print it.
+
+Example Usage
+-------------
+
+After building the bundles, the following sequence of commands can be used to test sending and receiving messages:
+
+    osgi> listChannels
+    {localhost}={channel.host=localhost}
+        Registered by bundle: channel 0
+    
+    osgi> declExchange localhost Foo direct
+    Exchange Declared
+    
+    osgi> declQ localhost FooQueue
+    Queue Declared
+    
+    osgi> bindQ localhost FooQueue Foo FooQueue
+    Queue Bound
+    
+    osgi> publish localhost Foo FooQueue "Hello World"
+    Message Published
+    
+    osgi> ---Message Received---
+    Hello World
