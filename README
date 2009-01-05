@@ -77,3 +77,16 @@ After building the bundles, the following sequence of commands can be used to te
     
     osgi> ---Message Received---
     Hello World
+
+
+Notes on "OSGifying" the RabbitMQ Client Library
+------------------------------------------------
+
+In order to use the RabbitMQ client library under OSGi it must be transformed into an OSGi bundle. This process (sometimes called "bundleizing" or "OSGifying") involves introspecting the bytecode contained in the library and generating the necessary dependency declarations to be placed in the MANIFEST.MF. It must also be done for the Apache Commons IO library on which RabbitMQ depends.
+
+Bnd is able to OSGify libraries but it must be provided certain information such as the name and version of the new bundle. This information is provided by two files in the `original` subdirectory: com.rabbitmq.client_1.5.0.beta.bnd and org.apache.commons.io_1.2.0.bnd. To generate the bundles we can simply run Bnd as follows:
+
+    bnd com.rabbitmq.client_1.5.0.beta.bnd
+    bnd org.apache.commons.io_1.2.0.bnd
+
+The resulting bundle JARs can still be used as ordinary JAR files in traditional non-OSGi Java environments. It would be advantageous therefore to incorporate this step into the main build for the RabbitMQ client library.
