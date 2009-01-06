@@ -33,17 +33,29 @@ If you are developing in Eclipse and have Bnd installed as an Eclipse plug-in, i
 Channel Bundle
 --------------
 
-The `channel` bundle creates a connection to a RabbitMQ broker running on localhost, using the default virtual host name "/" and username/password "guest/guest". It publishes this channel as a service in the OSGi Service Registry with the property `channel.name` set to "localhost".
+The "channel" bundle registers a ManagedServiceFactory (MSF) as defined by the OSGi Configuration Admin specification. This allows us to create channel connections declaratively using Configuration records. We can use this MSF in conjunction with the FileInstall bundle, which creates Configuration records based on properties files it finds in the `load` directory.
+
+To connect to a RabbitMQ broker on localhost with the default username, password and virtual host, create a file in the load directory named rabbitmq.channels-localhost.cfg with the following content:
+
+    name=mychannel
+    host=localhost
+    username=guest
+    password=guest
+    virtualHost=/
+
+Additional connections can be created in the same way by using a different suffix after the hyphen in the filename.
 
 Consumer Bundle
 ---------------
 
 This bundle watches for channel instances published in the Service Registry and creates a simple consumer for each one. The consumer receives messages from the "FooQueue" queue and simply prints them to the console.
 
+TODO: explore how to make this more declarative and POJO-based. 
+
 Commands Bundle
 ---------------
 
-This bundle provides commands into the OSGi console. Note that it runs only under Equinox, since extending the console uses a framework-specific API (the other bundles will work under any OSGi R4 framework).
+This bundle provides commands into the OSGi console for manual control over the RabbitMQ broker. Note that it runs only under Equinox, since extending the console uses a framework-specific API (the other bundles will work under any OSGi R4 framework).
 
 The commands provided are as follows:
 
