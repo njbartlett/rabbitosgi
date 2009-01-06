@@ -78,7 +78,7 @@ public class ChannelServiceFactory implements ManagedServiceFactory {
 			Channel channel = conn.createChannel();
 			
 			Properties svcProps = new Properties();
-			svcProps.put(CONNECTION_HOST, host);
+			svcProps.put(Constants.CHANNEL_HOST, host);
 			if(channelName == null) {
 				svcProps.put(Constants.CHANNEL_NAME, params.getUserName() + "@" + host);
 			} else {

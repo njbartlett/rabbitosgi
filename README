@@ -72,19 +72,19 @@ Example Usage
 After building the bundles, the following sequence of commands can be used to test sending and receiving messages:
 
     osgi> listChannels
-    {localhost}={channel.host=localhost}
+    {mychannel}={channel.host=localhost}
         Registered by bundle: channel 0
     
-    osgi> declExchange localhost Foo direct
+    osgi> declExchange mychannel Foo direct
     Exchange Declared
     
-    osgi> declQ localhost FooQueue
+    osgi> declQ mychannel FooQueue
     Queue Declared
     
-    osgi> bindQ localhost FooQueue Foo FooQueue
+    osgi> bindQ mychannel FooQueue Foo FooQueue
     Queue Bound
     
-    osgi> publish localhost Foo FooQueue "Hello World"
+    osgi> publish mychannel Foo FooQueue "Hello World"
     Message Published
     
     osgi> ---Message Received---
