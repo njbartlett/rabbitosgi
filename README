@@ -30,25 +30,25 @@ Note that "bnd" is assumed to be an alias for `java -jar bnd.jar`.
 
 If you are developing in Eclipse and have Bnd installed as an Eclipse plug-in, individual bundles can be built simply by right-clicking on the .bnd file and selecting Make Bundle. See the Bnd documentation for instructions on installing as an Eclipse plug-in.
 
-Channel Bundle
---------------
+Connections Bundle
+------------------
 
-The "channel" bundle registers a ManagedServiceFactory (MSF) as defined by the OSGi Configuration Admin specification. This allows us to create channel connections declaratively using Configuration records. We can use this MSF in conjunction with the FileInstall bundle, which creates Configuration records based on properties files it finds in the `load` directory.
+The "connections" bundle registers a ManagedServiceFactory (MSF) as defined by the OSGi Configuration Admin specification. This allows us to create connections declaratively using Configuration records. We can use this MSF in conjunction with the FileInstall bundle, which creates Configuration records based on properties files it finds in the `load` directory.
 
-To connect to a RabbitMQ broker on localhost with the default username, password and virtual host, create a file in the load directory named rabbitmq.channels-localhost.cfg with the following content:
+To connect to a RabbitMQ broker on localhost with the default username, password and virtual host, create a file in the load directory named rabbitmq.connections-localhost.cfg with the following content:
 
-    name=mychannel
+    name=mycon
     host=localhost
     username=guest
     password=guest
-    virtualHost=/
+    vhost=/
 
 Additional connections can be created in the same way by using a different suffix after the hyphen in the filename.
 
 Consumer Bundle
 ---------------
 
-This bundle watches for channel instances published in the Service Registry and creates a simple consumer for each one. The consumer receives messages from the "FooQueue" queue and simply prints them to the console.
+This bundle watches for connection instances published in the Service Registry and creates a simple consumer for each one. The consumer receives messages from the "FooQueue" queue and simply prints them to the console.
 
 TODO: explore how to make this more declarative and POJO-based. 
 
@@ -59,8 +59,8 @@ This bundle provides commands into the OSGi console for manual control over the 
 
 The commands provided are as follows:
 
-	* listChannels: List connected channels.
-	* declExchange: Declare an exchange on the specified channel.
+	* listConns: List connected channels.
+	* declExchange: Declare an exchange on the specified broker connection.
 	* declQ: Declare a queue.
 	* bindQ: Bind a queue to an exchange.
 	* publish: Publish a message to an exchange.
@@ -71,20 +71,20 @@ Example Usage
 
 After building the bundles, the following sequence of commands can be used to test sending and receiving messages:
 
-    osgi> listChannels
-    {mychannel}={channel.host=localhost}
+    osgi> listConns
+    {mycon}={connection.host=localhost}
         Registered by bundle: channel 0
     
-    osgi> declExchange mychannel Foo direct
+    osgi> declExchange mycon FooEx direct
     Exchange Declared
     
-    osgi> declQ mychannel FooQueue
+    osgi> declQ mycon FooQueue
     Queue Declared
     
-    osgi> bindQ mychannel FooQueue Foo FooQueue
+    osgi> bindQ mycon FooQueue FooEx FooQueue
     Queue Bound
     
-    osgi> publish mychannel Foo FooQueue "Hello World"
+    osgi> publish mycon FooEx FooQueue "Hello World"
     Message Published
     
     osgi> ---Message Received---
