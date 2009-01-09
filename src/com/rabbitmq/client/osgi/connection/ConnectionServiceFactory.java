@@ -1,4 +1,4 @@
-package com.rabbitmq.client.osgi.channel;
+package com.rabbitmq.client.osgi.connection;
 
 import java.io.IOException;
 import java.util.Dictionary;
@@ -11,39 +11,37 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 
-import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ConnectionParameters;
-import com.rabbitmq.client.osgi.Constants;
+import com.rabbitmq.client.osgi.common.ServiceProperties;
 
-public class ChannelServiceFactory implements ManagedServiceFactory {
+public class ConnectionServiceFactory implements ManagedServiceFactory {
 	
-	private static final String CHANNEL_NAME = "name";
-	private static final String CONNECTION_HOST = "host";
-	private static final String CONNECTION_PORT = "port";
-	private static final String CONNECTION_USERNAME = "username";
-	private static final String CONNECTION_PASSWORD = "password";
-	private static final String CONNECTION_VHOST = "virtualHost";
-	private static final String CONNECTION_REQUESTED_HEARTBEAT = "requestedHeartbeat";
+	private static final String PROP_NAME = "name";
+	private static final String PROP_HOST = "host";
+	private static final String PROP_PORT = "port";
+	private static final String PROP_USERNAME = "username";
+	private static final String PROP_PASSWORD = "password";
+	private static final String PROP_VIRTUAL_HOST = "vhost";
+	private static final String PROP_REQ_HEARTBEAT = "heartbeat";
 	
-	private final Map<String, Tuple3<Connection, Channel, ServiceRegistration>> map = new HashMap<String, Tuple3<Connection, Channel, ServiceRegistration>>();
+	private final Map<String, Pair<Connection, ServiceRegistration>> map = new HashMap<String, Pair<Connection, ServiceRegistration>>();
 	private final BundleContext context;
 	
-	public ChannelServiceFactory(BundleContext context) {
+	public ConnectionServiceFactory(BundleContext context) {
 		this.context = context;
 	}
 
 	public void deleted(String pid) {
-		Tuple3<Connection, Channel, ServiceRegistration> tuple = null;
+		Pair<Connection,ServiceRegistration> pair = null;
 		synchronized (map) {
-			tuple = map.remove(pid);
+			pair = map.remove(pid);
 		}
-		if(tuple != null) {
-			tuple.getC().unregister();
+		if(pair != null) {
+			pair.getSnd().unregister();
 			try {
-				tuple.getB().close();
-				tuple.getA().close();
+				pair.getFst().close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -56,54 +54,58 @@ public class ChannelServiceFactory implements ManagedServiceFactory {
 
 	public void updated(String pid, @SuppressWarnings("unchecked") Dictionary props)
 			throws ConfigurationException {
-		String channelName = getString(CHANNEL_NAME, props);
-		String host = getMandatoryString(CONNECTION_HOST, props);
-		Integer portObj = getInteger(CONNECTION_PORT, props);
+		// Process Properties
+		String host = getMandatoryString(PROP_HOST, props);
+		Integer portObj = getInteger(PROP_PORT, props);
 	
 		ConnectionParameters params = new ConnectionParameters();
-		params.setUsername(getMandatoryString(CONNECTION_USERNAME, props));
-		params.setPassword(getMandatoryString(CONNECTION_PASSWORD, props));
-		params.setVirtualHost(getMandatoryString(CONNECTION_VHOST, props));
+		params.setUsername(getMandatoryString(PROP_USERNAME, props));
+		params.setPassword(getMandatoryString(PROP_PASSWORD, props));
+		params.setVirtualHost(getMandatoryString(PROP_VIRTUAL_HOST, props));
 		
-		Integer reqHeartbeat = getInteger(CONNECTION_REQUESTED_HEARTBEAT, props);
+		Integer reqHeartbeat = getInteger(PROP_REQ_HEARTBEAT, props);
 		if(reqHeartbeat != null) {
 			params.setRequestedHeartbeat(reqHeartbeat.intValue());
 		}
 		
+		// If name not specified, set to "username@host:port".
+		String name = getString(PROP_NAME, props);
+		if(name == null) {
+			StringBuilder buf = new StringBuilder();
+			buf.append(params.getUserName()).append(params.getUserName()).append('@').append(host);
+			if(portObj != null) {
+				buf.append(':').append(portObj.intValue());
+			}
+			name = buf.toString();
+		}
+		
 		// Create the new connection & service
-		Tuple3<Connection, Channel, ServiceRegistration> tuple = null;
+		Pair<Connection, ServiceRegistration> connPair = null;
 		try {
 			ConnectionFactory connFactory = new ConnectionFactory(params);
 			Connection conn = connFactory.newConnection(host, portObj == null ? -1 : portObj.intValue());
-			Channel channel = conn.createChannel();
 			
 			Properties svcProps = new Properties();
-			svcProps.put(Constants.CHANNEL_HOST, host);
-			if(channelName == null) {
-				svcProps.put(Constants.CHANNEL_NAME, params.getUserName() + "@" + host);
-			} else {
-				svcProps.put(Constants.CHANNEL_NAME, channelName);
-			}
-			ServiceRegistration reg = context.registerService(Channel.class.getName(), channel, svcProps);
+			svcProps.put(ServiceProperties.CONNECTION_NAME, name);
+			svcProps.put(ServiceProperties.CONNECTION_HOST, host);
+			ServiceRegistration reg = context.registerService(Connection.class.getName(), conn, svcProps);
 			
-			
-			tuple = new Tuple3<Connection, Channel, ServiceRegistration>(conn, channel, reg);
+			connPair = new Pair<Connection, ServiceRegistration>(conn, reg);
 		} catch (IOException e) {
 			throw new ConfigurationException(null, "Error connecting to broker", e);
 		}
 		
 		// Replace in the map
-		Tuple3<Connection, Channel, ServiceRegistration> old = null;
+		Pair<Connection, ServiceRegistration> old = null;
 		synchronized (map) {
-			old = map.put(pid, tuple);
+			old = map.put(pid, connPair);
 		}
 		
 		// Unregister and destroy the old connection with this PID (if any)
 		if(old != null) {
-			old.getC().unregister();
+			old.getSnd().unregister();
 			try {
-				old.getB().close();
-				old.getA().close();
+				old.getFst().close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -154,4 +156,23 @@ public class ChannelServiceFactory implements ManagedServiceFactory {
 		}
 		return result;
 	}
+}
+
+class Pair<A, B> {
+	private final A fst;
+	private final B snd;
+
+	public Pair(A fst, B snd) {
+		this.fst = fst;
+		this.snd = snd;
+	}
+
+	public A getFst() {
+		return fst;
+	}
+
+	public B getSnd() {
+		return snd;
+	}
+
 }

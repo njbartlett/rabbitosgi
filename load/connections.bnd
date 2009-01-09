@@ -1,0 +1,3 @@
+Bundle-Activator: com.rabbitmq.client.osgi.connection.ConnectionServiceFactoryActivator
+Private-Package: com.rabbitmq.client.osgi.connection,\
+	com.rabbitmq.client.osgi.common

@@ -9,21 +9,22 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.osgi.Constants;
+import com.rabbitmq.client.osgi.common.ServiceProperties;
 
-public class ChannelCommands implements CommandProvider {
+public class RabbitCommands implements CommandProvider {
 	
-	public final String HELP_LIST_CHANNELS = "listChannels - List connected channels.";
-	public final String HELP_DECL_EXCHANGE = "declExchange <channel> <exchange> <type> - Declare an exchange on the specified channel.";
-	public final String HELP_DECL_QUEUE = "declQ <channel> <queue> - Declare a queue.";
-	public final String HELP_BIND_QUEUE = "bindQ <channel> <queue> <exchange> <routingKey> - Bind a queue to an exchange.";
-	public final String HELP_PUBLISH = "publish <channel> <exchange> <routingKey> <message> - Publish a message to an exchange.";
-	public final String HELP_RECEIVE = "receive <channel> <queue> - Retrieve a single message from the queue and print it.";
+	public final String HELP_LIST_CONNS = "listConns - List connections.";
+	public final String HELP_DECL_EXCHANGE = "declExchange <conn> <exchange> <type> - Declare an exchange on the specified connection.";
+	public final String HELP_DECL_QUEUE = "declQ <conn> <queue> - Declare a queue.";
+	public final String HELP_BIND_QUEUE = "bindQ <conn> <queue> <exchange> <routingKey> - Bind a queue to an exchange.";
+	public final String HELP_PUBLISH = "publish <conn> <exchange> <routingKey> <message> - Publish a message to an exchange.";
+	public final String HELP_RECEIVE = "receive <conn> <queue> - Retrieve a single message from the queue and print it.";
 	
 	private final BundleContext context;
 
-	public ChannelCommands(BundleContext context) {
+	public RabbitCommands(BundleContext context) {
 		this.context = context;
 	}
 
@@ -31,7 +32,7 @@ public class ChannelCommands implements CommandProvider {
 		StringBuilder buf = new StringBuilder();
 		
 		buf.append("---RabbitMQ Client Commands---\n");
-		buf.append('\t').append(HELP_LIST_CHANNELS).append('\n');
+		buf.append('\t').append(HELP_LIST_CONNS).append('\n');
 		buf.append('\t').append(HELP_DECL_EXCHANGE).append('\n');
 		buf.append('\t').append(HELP_DECL_QUEUE).append('\n');
 		buf.append('\t').append(HELP_BIND_QUEUE).append('\n');
@@ -41,32 +42,32 @@ public class ChannelCommands implements CommandProvider {
 		return buf.toString();
 	}
 	
-	public void _listChannels(CommandInterpreter ci) throws InvalidSyntaxException {
-		ServiceReference[] refs = context.getServiceReferences(Channel.class.getName(), null);
+	public void _listConns(CommandInterpreter ci) throws InvalidSyntaxException {
+		ServiceReference[] refs = context.getServiceReferences(Connection.class.getName(), null);
 		if(refs != null) {
 			for (ServiceReference ref : refs) {
-				String name = (String) ref.getProperty(Constants.CHANNEL_NAME);
-				String host = (String) ref.getProperty(Constants.CHANNEL_HOST);
+				String name = (String) ref.getProperty(ServiceProperties.CONNECTION_NAME);
+				String host = (String) ref.getProperty(ServiceProperties.CONNECTION_HOST);
 				
-				ci.println("{" + name + "}={" + Constants.CHANNEL_HOST + "=" + host + "}");
+				ci.println("{" + name + "}={" + ServiceProperties.CONNECTION_HOST + "=" + host + "}");
 				ci.println("\t" + "Registered by bundle: " + ref.getBundle().getSymbolicName() + " " + ref.getBundle().getHeaders().get(org.osgi.framework.Constants.BUNDLE_VERSION));
 			}
 		} else {
-			ci.println("No connected channels");
+			ci.println("No open connections.");
 		}
 	}
 	
 	public void _declExchange(final CommandInterpreter ci) {
-		String channelName = ci.nextArgument();
+		String conn = ci.nextArgument();
 		final String exchange = ci.nextArgument();
 		final String type = ci.nextArgument();
 		
-		if(channelName == null || exchange == null || type == null) {
+		if(conn == null || exchange == null || type == null) {
 			ci.println("Usage: " + HELP_DECL_EXCHANGE);
 			return;
 		}
 		
-		withChannel(channelName, ci, new ChannelOp() {
+		withConnection(conn, ci, new ChannelOp() {
 			public void execute(Channel channel) {
 				try {
 					channel.exchangeDeclare(exchange, type);
@@ -88,7 +89,7 @@ public class ChannelCommands implements CommandProvider {
 			return;
 		}
 
-		withChannel(channelName, ci, new ChannelOp() {
+		withConnection(channelName, ci, new ChannelOp() {
 			public void execute(Channel channel) {
 				try {
 					channel.queueDeclare(queueName);
@@ -111,7 +112,7 @@ public class ChannelCommands implements CommandProvider {
 			ci.println("Usage: " + HELP_BIND_QUEUE);
 		}
 		
-		withChannel(channelName, ci, new ChannelOp() {
+		withConnection(channelName, ci, new ChannelOp() {
 			public void execute(Channel channel) {
 				try {
 					channel.queueBind(queueName, exchangeName, routingKey);
@@ -135,7 +136,7 @@ public class ChannelCommands implements CommandProvider {
 			return;
 		}
 		
-		withChannel(channelName, ci, new ChannelOp() {
+		withConnection(channelName, ci, new ChannelOp() {
 			public void execute(Channel channel) {
 				try {
 					channel.basicPublish(exchange, routingKey, null, message.getBytes());
@@ -157,7 +158,7 @@ public class ChannelCommands implements CommandProvider {
 			return;
 		}
 		
-		withChannel(channelName, ci, new ChannelOp() {
+		withConnection(channelName, ci, new ChannelOp() {
 			public void execute(Channel channel) {
 				try {
 					GetResponse response = channel.basicGet(queue, true);
@@ -178,36 +179,50 @@ public class ChannelCommands implements CommandProvider {
 		});
 	}
 	
-	private ServiceReference getChannelByName(String name) {
+	private ServiceReference getConnectionByName(String name) {
 		ServiceReference result = null;
 		try {
-			ServiceReference[] refs = context.getServiceReferences(Channel.class.getName(), String.format("(%s=%s)", Constants.CHANNEL_NAME, name));
+			ServiceReference[] refs = context.getServiceReferences(Connection.class.getName(), String.format("(%s=%s)", ServiceProperties.CONNECTION_NAME	, name));
 			if(refs != null && refs.length > 0) {
 				result = refs[0];
 			}
 		} catch (InvalidSyntaxException e) {
 			// Shouldn't happen
+			e.printStackTrace();
 		}
 		return result;
 	}
 	
-	private void withChannel(String name, CommandInterpreter ci, ChannelOp op) {
-		ServiceReference ref = getChannelByName(name);
+	private void withConnection(String name, CommandInterpreter ci, ChannelOp op) {
+		ServiceReference ref = getConnectionByName(name);
 		if(ref == null) {
-			ci.println("Specified channel does not exist");
+			ci.println("Specified connection does not exist");
 			return;
 		}
 		
-		Channel channel = (Channel) context.getService(ref);
-		if(channel == null) {
-			ci.println("Specified channel does not exist");
+		Connection conn = (Connection) context.getService(ref);
+		if(conn == null) {
+			ci.println("Specified connection does not exist");
 			return;
 		}
 		
+		Channel channel = null;
 		try {
+			channel = conn.createChannel();
 			op.execute(channel);
+		} catch (IOException e) {
+			ci.println("Error creating channel");
+			ci.printStackTrace(e);
 		} finally {
 			context.ungetService(ref);
+			if(channel != null) {
+				try {
+					channel.close();
+				} catch (IOException e) {
+					ci.println("Error closing channel");
+					ci.printStackTrace(e);
+				}
+			}
 		}
 	}
 	

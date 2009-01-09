@@ -7,7 +7,7 @@ import org.osgi.framework.BundleContext;
 public class CommandsActivator implements BundleActivator {
 
 	public void start(BundleContext context) throws Exception {
-		context.registerService(CommandProvider.class.getName(), new ChannelCommands(context), null);
+		context.registerService(CommandProvider.class.getName(), new RabbitCommands(context), null);
 	}
 
 	public void stop(BundleContext context) throws Exception {

@@ -7,31 +7,34 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 
 public class ChannelConsumerTracker extends ServiceTracker {
 	
 	private final String queueName;
 
 	public ChannelConsumerTracker(BundleContext context, String queueName) {
-		super(context, Channel.class.getName(), null);
+		super(context, Connection.class.getName(), null);
 		this.queueName = queueName;
 	}
 	
 	@Override
 	public Object addingService(ServiceReference reference) {
-		Channel channel = (Channel) context.getService(reference);
+		Connection conn = (Connection) context.getService(reference);
 		String consumerTag = null;
 		
-		ConsoleOutputConsumer consumer = new ConsoleOutputConsumer(channel);
+		Channel channel = null;
 		try {
+			channel = conn.createChannel();
+			ConsoleOutputConsumer consumer = new ConsoleOutputConsumer(channel);
 			channel.queueDeclare(queueName);
 			consumerTag = channel.basicConsume(queueName, false, consumer);
+			return new Pair<Channel,String>(channel, consumerTag);
 		} catch (IOException e) {
 			System.err.println("Error subscribing consumer");
 			e.printStackTrace();
+			return null;
 		}
-		
-		return new Pair<Channel,String>(channel, consumerTag);
 	}
 	
 	@Override
@@ -41,6 +44,7 @@ public class ChannelConsumerTracker extends ServiceTracker {
 		
 		try {
 			pair.getFst().basicCancel(pair.getSnd());
+			pair.getFst().close();
 		} catch (IOException e) {
 			System.err.println("Error unsubscribing consumer");
 			e.printStackTrace();
