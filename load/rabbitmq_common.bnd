@@ -1,0 +1,2 @@
+Export-Package=com.rabbitmq.client.osgi.common,\
+	com.rabbitmq.client.osgi.api
