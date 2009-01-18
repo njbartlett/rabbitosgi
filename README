@@ -48,12 +48,12 @@ Additional connections can be created in the same way by using a different suffi
 Exchanges Bundle
 ----------------
 
-This bundle adds a declarative way to create AMQP exchanges for a particular connection, using Config Admin. To declare an exchange named FooEx on the `local` connection, create a file named `rabbitmq.exchanges-fooex.cfg` in the load directory with the following content"
+This bundle adds a declarative way to create AMQP exchanges for a particular connection, using Config Admin. To declare an exchange named FooEx on the `local` connection, create a file named `rabbitmq.exchanges-fooex.cfg` in the load directory with the following content:
 
     connection.name=local
     exchange.name=FooEx
     exchange.type=direct        #optional, defaults to "direct"
-    exchange.passive=false      #optional, default to false
+    exchange.passive=false      #optional, defaults to false
     exchange.durable=false      #optional, defaults to false
     exchange.autoDelete=false   #optional, defaults to false
 

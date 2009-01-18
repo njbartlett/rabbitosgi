@@ -4,24 +4,25 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.log.LogService;
 import org.osgi.util.tracker.ServiceTracker;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.osgi.api.Exchange;
 import com.rabbitmq.client.osgi.common.Pair;
 import com.rabbitmq.client.osgi.common.ServiceProperties;
 
 public class ConnectionExchangeTracker extends ServiceTracker {
 	
-	private final LogService log;
+	private static final Logger LOG = Logger.getLogger(ConnectionExchangeTracker.class);
 	
 	private final String connName;
 	private final String exchangeName;
@@ -32,9 +33,8 @@ public class ConnectionExchangeTracker extends ServiceTracker {
 	private final Map<String, Object> arguments;
 	
 
-	public ConnectionExchangeTracker(BundleContext context, LogService log, String connName, String exchangeName, String type, boolean passive, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
+	public ConnectionExchangeTracker(BundleContext context, String connName, String exchangeName, String type, boolean passive, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
 		super(context, createFilter(connName), null);
-		this.log = log;
 		this.connName = connName;
 		this.exchangeName = exchangeName;
 		this.type = type;
@@ -62,10 +62,10 @@ public class ConnectionExchangeTracker extends ServiceTracker {
 		try {
 			channel = conn.createChannel();
 			
-			log.log(LogService.LOG_DEBUG, "ConnectionExchangeTracker: connection '" + connName + "' added, declaring exchange '" + exchangeName + "'");
+			LOG.debug("ConnectionExchangeTracker: connection '" + connName + "' ADDED, registering exchange '" + exchangeName + "'");
 			
 			channel.exchangeDeclare(exchangeName, type, passive, durable, autoDelete, arguments);
-			ExchangeImpl exchange = new ExchangeImpl(exchangeName, channel);
+			ChannelExchange exchange = new ChannelExchange(exchangeName, channel);
 
 			Properties props = new Properties();
 			props.put(ServiceProperties.EXCHANGE_NAME, exchangeName);
@@ -76,13 +76,13 @@ public class ConnectionExchangeTracker extends ServiceTracker {
 			Pair<Channel, ServiceRegistration> pair = new Pair<Channel, ServiceRegistration>(channel, reg);
 			return pair;
 		} catch (IOException e) {
-			log.log(LogService.LOG_ERROR, "Error opening channel", e);
+			LOG.error("Error opening channel", e);
 			return null;
 		} finally {
 			try {
 				channel.close();
 			} catch (IOException e) {
-				log.log(LogService.LOG_ERROR, "Error closing channel", e);
+				LOG.error("Error closing channel", e);
 			}
 		}
 	}
@@ -91,12 +91,16 @@ public class ConnectionExchangeTracker extends ServiceTracker {
 	public void removedService(ServiceReference reference, Object service) {
 		@SuppressWarnings("unchecked")
 		Pair<Channel, ServiceRegistration> pair = (Pair<Channel, ServiceRegistration>) service;
+
+		LOG.debug("ConnectionExchangeTracker: connection '" + connName + "' REMOVED, unregistering exchange '" + exchangeName + "'");
 		
 		pair.getSnd().unregister();
 		try {
 			pair.getFst().close();
 		} catch (IOException e) {
-			log.log(LogService.LOG_ERROR, "Error closing channel", e);
+			LOG.error("Error closing channel", e);
+		} catch (ShutdownSignalException e) {
+			LOG.warn("Channel already closed");
 		}
 		
 		context.ungetService(reference);

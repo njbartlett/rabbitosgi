@@ -1,3 +1,2 @@
 Bundle-Activator: com.rabbitmq.client.osgi.commands.CommandsActivator
-Private-Package: com.rabbitmq.client.osgi.commands,\
-	com.rabbitmq.client.osgi
+Private-Package: com.rabbitmq.client.osgi.commands

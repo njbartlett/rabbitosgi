@@ -1,2 +1,2 @@
-Bundle-Activator=com.rabbitmq.client.osgi.exchange.ExchangeServiceFactoryActivator
+Bundle-Activator=com.rabbitmq.client.osgi.exchange.ExchangesActivator
 Private-Package=com.rabbitmq.client.osgi.exchange

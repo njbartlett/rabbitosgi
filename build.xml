@@ -5,6 +5,7 @@
 		<pathelement location="runtime/org.apache.commons.io_1.2.0.jar"/>
 		<pathelement location="runtime/com.rabbitmq.client_1.5.0.beta.jar"/>
 		<pathelement location="runtime/osgi.cmpn.jar"/>
+		<pathelement location="runtime/org.apache.log4j_1.2.15.jar"/>
 	</path>
 
 	<!-- ================================= 

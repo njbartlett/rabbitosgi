@@ -4,13 +4,16 @@ import java.util.Dictionary;
 
 import org.osgi.service.cm.ConfigurationException;
 
-public class CMUtils {
+public class CMPropertyAccessor {
 	
-	private CMUtils() {
-		// Prevent instantiation
+	@SuppressWarnings("unchecked")
+	private final Dictionary props;
+
+	public CMPropertyAccessor(@SuppressWarnings("unchecked") Dictionary props) {
+		this.props = props;
 	}
 	
-	public static String getString(String name, @SuppressWarnings("unchecked") Dictionary props) throws ConfigurationException {
+	public String getString(String name) throws ConfigurationException {
 		Object result = props.get(name);
 		if(result != null && !(result instanceof String)) {
 			throw new ConfigurationException(name, "Property value must be of type String");
@@ -18,15 +21,15 @@ public class CMUtils {
 		return (String) result;
 	}
 	
-	public static String getMandatoryString(String name, @SuppressWarnings("unchecked") Dictionary props) throws ConfigurationException {
-		String result = getString(name, props);
+	public String getMandatoryString(String name) throws ConfigurationException {
+		String result = getString(name);
 		if(result == null) {
 			throw new ConfigurationException(name, "Missing mandatory property");
 		}
 		return result;
 	}
 	
-	public static Integer getInteger(String name, @SuppressWarnings("unchecked") Dictionary props) throws ConfigurationException {
+	public Integer getInteger(String name) throws ConfigurationException {
 		Integer result = null;
 		
 		Object obj = props.get(name);
@@ -47,15 +50,15 @@ public class CMUtils {
 		return result;
 	}
 	
-	public static Integer getMandatoryInteger(String name, @SuppressWarnings("unchecked") Dictionary props) throws ConfigurationException {
-		Integer result = getInteger(name, props);
+	public Integer getMandatoryInteger(String name) throws ConfigurationException {
+		Integer result = getInteger(name);
 		if(result == null) {
 			throw new ConfigurationException(name, "Missing mandatory property");
 		}
 		return result;
 	}
 	
-	public static Boolean getBoolean(String name, @SuppressWarnings("unchecked") Dictionary props) throws ConfigurationException {
+	public Boolean getBoolean(String name) throws ConfigurationException {
 		Boolean result = null;
 		
 		Object obj = props.get(name);
@@ -70,5 +73,10 @@ public class CMUtils {
 		}
 		
 		return result;
+	}
+
+	public boolean getBoolean(String name, boolean defaultValue) throws ConfigurationException {
+		Boolean b = getBoolean(name);
+		return (b != null) ? b.booleanValue() : defaultValue;
 	}
 }

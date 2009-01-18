@@ -14,7 +14,7 @@ import org.osgi.service.cm.ManagedServiceFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ConnectionParameters;
-import com.rabbitmq.client.osgi.common.CMUtils;
+import com.rabbitmq.client.osgi.common.CMPropertyAccessor;
 import com.rabbitmq.client.osgi.common.Pair;
 import com.rabbitmq.client.osgi.common.ServiceProperties;
 
@@ -57,21 +57,22 @@ public class ConnectionServiceFactory implements ManagedServiceFactory {
 	public void updated(String pid, @SuppressWarnings("unchecked") Dictionary props)
 			throws ConfigurationException {
 		// Process Properties
-		String host = CMUtils.getMandatoryString(PROP_HOST, props);
-		Integer portObj = CMUtils.getInteger(PROP_PORT, props);
+		CMPropertyAccessor accessor = new CMPropertyAccessor(props);
+		String host = accessor.getMandatoryString(PROP_HOST);
+		Integer portObj = accessor.getInteger(PROP_PORT);
 	
 		ConnectionParameters params = new ConnectionParameters();
-		params.setUsername(CMUtils.getMandatoryString(PROP_USERNAME, props));
-		params.setPassword(CMUtils.getMandatoryString(PROP_PASSWORD, props));
-		params.setVirtualHost(CMUtils.getMandatoryString(PROP_VIRTUAL_HOST, props));
+		params.setUsername(accessor.getMandatoryString(PROP_USERNAME));
+		params.setPassword(accessor.getMandatoryString(PROP_PASSWORD));
+		params.setVirtualHost(accessor.getMandatoryString(PROP_VIRTUAL_HOST));
 		
-		Integer reqHeartbeat = CMUtils.getInteger(PROP_REQ_HEARTBEAT, props);
+		Integer reqHeartbeat = accessor.getInteger(PROP_REQ_HEARTBEAT);
 		if(reqHeartbeat != null) {
 			params.setRequestedHeartbeat(reqHeartbeat.intValue());
 		}
 		
 		// If name not specified, set to "username@host:port".
-		String name = CMUtils.getString(PROP_NAME, props);
+		String name = accessor.getString(PROP_NAME);
 		if(name == null) {
 			StringBuilder buf = new StringBuilder();
 			buf.append(params.getUserName()).append(params.getUserName()).append('@').append(host);
