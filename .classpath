@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="runtime/com.rabbitmq.client_1.5.0.beta.jar" sourcepath="libsrc/com.rabbitmq.client.sources_1.5.0.beta.jar"/>
 	<classpathentry kind="lib" path="runtime/equinox.jar" sourcepath="libsrc/equinox.source.jar"/>
 	<classpathentry kind="lib" path="runtime/osgi.cmpn.jar" sourcepath="libsrc/osgi.cmpn.sources.jar"/>
+	<classpathentry kind="lib" path="runtime/org.apache.log4j_1.2.15.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

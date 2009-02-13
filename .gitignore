@@ -1,7 +1,4 @@
 *~
 bin
-configuration
-load/*.jar
-runtime/configuration/*.log
 .DS_Store
 classes

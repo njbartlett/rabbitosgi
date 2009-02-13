@@ -116,3 +116,9 @@ Bnd is able to OSGify libraries but it must be provided certain information such
     bnd org.apache.commons.io_1.2.0.bnd
 
 The resulting bundle JARs can still be used as ordinary JAR files in traditional non-OSGi Java environments. It would be advantageous therefore to incorporate this step into the main build for the RabbitMQ client library.
+
+Licence
+-------
+
+Copyright (c) 2009 Neil Bartlett.
+All rights reserved. This program and the accompanying materials are made available under the terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html

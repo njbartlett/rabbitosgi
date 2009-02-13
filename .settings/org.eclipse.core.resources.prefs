@@ -1,0 +1,10 @@
+#Fri Feb 13 22:43:24 GMT 2009
+eclipse.preferences.version=1
+encoding//load/commands.bnd=ISO-8859-1
+encoding//load/connections.bnd=ISO-8859-1
+encoding//load/consumer.bnd=ISO-8859-1
+encoding//load/exchanges.bnd=ISO-8859-1
+encoding//load/log4j.properties=ISO-8859-1
+encoding//load/log4j_config.bnd=ISO-8859-1
+encoding//load/rabbitmq_common.bnd=ISO-8859-1
+encoding//load/rabbitmq_osgi_api.bnd=ISO-8859-1
